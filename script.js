@@ -7,6 +7,7 @@
   const siteNav = document.getElementById("site-nav");
   const themeToggle = document.getElementById("theme-toggle");
   const yearEl = document.getElementById("year");
+  const highlightsRoot = document.querySelector("[data-highlights]");
 
   function getStoredTheme() {
     try {
@@ -97,38 +98,28 @@
     });
   }
 
+  function scrollToHash(id) {
+    if (!id || id === "#") return;
+    const target = document.querySelector(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    closeNav();
+    if (history.replaceState) {
+      history.replaceState(null, "", id);
+    }
+  }
+
   function initSmoothScroll() {
-    const links = document.querySelectorAll('.site-nav a[href^="#"]');
-    links.forEach(function (anchor) {
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
       anchor.addEventListener("click", function (e) {
         const id = anchor.getAttribute("href");
         if (!id || id === "#") return;
         const target = document.querySelector(id);
         if (!target) return;
         e.preventDefault();
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-        closeNav();
-        if (history.replaceState) {
-          history.replaceState(null, "", id);
-        }
+        scrollToHash(id);
       });
     });
-
-    const logo = document.querySelector('.logo[href^="#"]');
-    if (logo) {
-      logo.addEventListener("click", function (e) {
-        const id = logo.getAttribute("href");
-        if (!id || id === "#") return;
-        const target = document.querySelector(id);
-        if (!target) return;
-        e.preventDefault();
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-        closeNav();
-        if (history.replaceState) {
-          history.replaceState(null, "", id);
-        }
-      });
-    }
   }
 
   function initReveal() {
@@ -165,6 +156,74 @@
     }
   }
 
+  function initHeaderScroll() {
+    if (!header) return;
+
+    function onScroll() {
+      header.classList.toggle("is-scrolled", window.scrollY > 24);
+    }
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+  }
+
+  function initHighlights() {
+    if (!highlightsRoot) return;
+
+    const panels = highlightsRoot.querySelectorAll(".stat-panel");
+    const dots = highlightsRoot.querySelectorAll("[data-stat-btn]");
+    const counterEl = highlightsRoot.querySelector("[data-highlight-current]");
+    if (!panels.length || !dots.length) return;
+
+    function showStat(index) {
+      const i = Number(index);
+      panels.forEach(function (panel, idx) {
+        const active = idx === i;
+        panel.hidden = !active;
+        panel.classList.toggle("is-active", active);
+      });
+      dots.forEach(function (dot) {
+        const active = Number(dot.getAttribute("data-stat-btn")) === i;
+        dot.classList.toggle("is-active", active);
+        dot.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      if (counterEl) {
+        counterEl.textContent = String(i + 1).padStart(2, "0");
+      }
+    }
+
+    dots.forEach(function (dot) {
+      dot.addEventListener("click", function () {
+        showStat(dot.getAttribute("data-stat-btn"));
+      });
+    });
+
+    let autoTimer = null;
+    function startAuto() {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      autoTimer = window.setInterval(function () {
+        const current = highlightsRoot.querySelector(".stat-panel.is-active");
+        const idx = current ? Number(current.getAttribute("data-stat")) : 0;
+        showStat((idx + 1) % panels.length);
+      }, 6000);
+    }
+
+    function stopAuto() {
+      if (autoTimer) {
+        window.clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    highlightsRoot.addEventListener("mouseenter", stopAuto);
+    highlightsRoot.addEventListener("mouseleave", startAuto);
+    highlightsRoot.addEventListener("focusin", stopAuto);
+    highlightsRoot.addEventListener("focusout", startAuto);
+
+    showStat(0);
+    startAuto();
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initTheme();
     if (themeToggle) {
@@ -174,5 +233,7 @@
     initSmoothScroll();
     initReveal();
     initYear();
+    initHeaderScroll();
+    initHighlights();
   });
 })();
