@@ -98,7 +98,7 @@
   }
 
   function initSmoothScroll() {
-    const links = document.querySelectorAll('.site-nav a[href^="#"]');
+    const links = document.querySelectorAll('a[href^="#"]:not(.skip-link)');
     links.forEach(function (anchor) {
       anchor.addEventListener("click", function (e) {
         const id = anchor.getAttribute("href");
@@ -113,22 +113,6 @@
         }
       });
     });
-
-    const logo = document.querySelector('.logo[href^="#"]');
-    if (logo) {
-      logo.addEventListener("click", function (e) {
-        const id = logo.getAttribute("href");
-        if (!id || id === "#") return;
-        const target = document.querySelector(id);
-        if (!target) return;
-        e.preventDefault();
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-        closeNav();
-        if (history.replaceState) {
-          history.replaceState(null, "", id);
-        }
-      });
-    }
   }
 
   function initReveal() {
