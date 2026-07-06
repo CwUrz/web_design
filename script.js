@@ -149,6 +149,94 @@
     }
   }
 
+  function initMap() {
+    const mapEl = document.getElementById("map");
+    if (!mapEl || typeof L === "undefined") return;
+
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    });
+
+    const taipei101 = [25.0339, 121.5645];
+    const map = L.map(mapEl, {
+      scrollWheelZoom: false,
+    }).setView(taipei101, 14);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    L.marker(taipei101)
+      .addTo(map)
+      .bindPopup("<strong>台北 101</strong><br>台北市信義區");
+
+    mapEl.addEventListener("focus", function () {
+      map.scrollWheelZoom.enable();
+    });
+    mapEl.addEventListener("blur", function () {
+      map.scrollWheelZoom.disable();
+    });
+
+    const mapWrapper = mapEl.closest(".map-wrapper");
+    if (mapWrapper) {
+      const resizeObserver = new ResizeObserver(function () {
+        map.invalidateSize();
+      });
+      resizeObserver.observe(mapWrapper);
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const revealObserver = new IntersectionObserver(
+          function (entries, obs) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                window.setTimeout(function () {
+                  map.invalidateSize();
+                }, 700);
+                obs.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.2 }
+        );
+        revealObserver.observe(mapWrapper);
+      }
+    }
+
+    window.setTimeout(function () {
+      map.invalidateSize();
+    }, 100);
+  }
+
+  function initVisitorCount() {
+    const countEl = document.getElementById("visitor-count");
+    if (!countEl) return;
+
+    const key = "portfolio-wu-qian-yun-page-views";
+    const apiUrl = "https://countapi.mileshilliard.com/api/v1/hit/" + key;
+
+    fetch(apiUrl)
+      .then(function (res) {
+        if (!res.ok) throw new Error("Visitor count request failed");
+        return res.json();
+      })
+      .then(function (data) {
+        const value = Number(data.value);
+        if (!Number.isNaN(value)) {
+          countEl.textContent = value.toLocaleString("zh-TW");
+        }
+      })
+      .catch(function () {
+        countEl.textContent = "—";
+      });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     initTheme();
     if (themeToggle) {
@@ -158,5 +246,7 @@
     initSmoothScroll();
     initReveal();
     initYear();
+    initMap();
+    initVisitorCount();
   });
 })();
